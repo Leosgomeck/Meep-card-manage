@@ -10,206 +10,77 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:         #0a0a0a;
-      --surface:    #141414;
-      --border:     #1f1f1f;
-      --accent:     #e8ff3b;
-      --accent-dim: rgba(232,255,59,0.10);
-      --red:        #ff4444;
-      --red-dim:    rgba(255,68,68,0.12);
-      --green:      #3bffb0;
-      --green-dim:  rgba(59,255,176,0.12);
-      --muted:      #444;
-      --text:       #efefef;
+      --bg:#0a0a0a; --surface:#141414; --border:#1f1f1f;
+      --accent:#e8ff3b; --accent-dim:rgba(232,255,59,0.10);
+      --red:#ff4444; --red-dim:rgba(255,68,68,0.12);
+      --green:#3bffb0; --green-dim:rgba(59,255,176,0.12);
+      --muted:#444; --text:#efefef;
     }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Space Grotesk', sans-serif;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-
-    header {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand-badge {
-      width: 38px; height: 38px;
-      background: var(--accent);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Space Mono', monospace;
-      font-weight: 700; font-size: 12px;
-      color: #0a0a0a; letter-spacing: -0.5px;
-    }
-    .brand-name { font-size: 15px; font-weight: 700; }
-    .brand-sub  { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; }
-    .pill {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 5px 13px;
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; color: var(--muted);
-    }
-    .pill strong { color: var(--accent); }
-
-    main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 14px; }
-
-    .scan-btn {
-      border: 1.5px solid var(--border);
-      border-radius: 20px;
-      background: var(--surface);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: border-color 0.2s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 24px;
-      gap: 18px;
-      min-height: 230px;
-      user-select: none;
-    }
-    .scan-btn.scanning { border-color: var(--accent); }
-    .scan-btn.ok       { border-color: var(--green); }
-    .scan-btn.err      { border-color: var(--red); }
-
-    .rings { position: relative; width: 82px; height: 82px; display: flex; align-items: center; justify-content: center; }
-    .ring {
-      position: absolute; border-radius: 50%;
-      border: 1.5px solid var(--accent); opacity: 0;
-    }
-    .r1 { width: 82px; height: 82px; }
-    .r2 { width: 60px; height: 60px; }
-    .r3 { width: 38px; height: 38px; }
-    .scanning .ring { animation: ripple 1.6s ease-out infinite; }
-    .scanning .r2   { animation-delay: 0.2s; }
-    .scanning .r3   { animation-delay: 0.4s; }
-    @keyframes ripple {
-      0%   { opacity: 0.9; transform: scale(0.55); }
-      100% { opacity: 0;   transform: scale(1.15); }
-    }
-    .nfc-icon { position: relative; z-index: 2; }
-
-    .scan-label { font-size: 17px; font-weight: 700; text-align: center; }
-    .scan-hint  { font-size: 12px; color: var(--muted); text-align: center; }
-
-    .status {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 13px 16px;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      transition: border-color 0.3s, background 0.3s;
-      min-height: 50px;
-    }
-    .status.ok  { border-color: var(--green); background: var(--green-dim); }
-    .status.err { border-color: var(--red);   background: var(--red-dim); }
-    .status.info { border-color: var(--accent); background: var(--accent-dim); }
-    .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--muted); flex-shrink: 0;
-      transition: background 0.3s;
-    }
-    .status.ok   .dot { background: var(--green); }
-    .status.err  .dot { background: var(--red); }
-    .status.info .dot { background: var(--accent); }
-
-    .log-head {
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .log-title { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
-    .btn-clr {
-      font-size: 11px; color: var(--muted); background: none;
-      border: none; cursor: pointer; font-family: 'Space Grotesk', sans-serif;
-      padding: 4px 8px; border-radius: 6px;
-    }
-    .btn-clr:hover { color: var(--red); }
-
-    .log-body {
-      display: flex; flex-direction: column; gap: 8px;
-      max-height: 240px; overflow-y: auto; padding-right: 2px;
-    }
-    .log-body::-webkit-scrollbar { width: 3px; }
-    .log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    .log-empty {
-      text-align: center; color: var(--muted);
-      font-size: 12px; padding: 24px;
-      border: 1px dashed var(--border); border-radius: 12px;
-    }
-    .log-item {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 14px;
-      animation: slidein 0.2s ease;
-    }
-    @keyframes slidein {
-      from { opacity: 0; transform: translateY(-6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .log-item.ok   { border-left: 3px solid var(--green); }
-    .log-item.err  { border-left: 3px solid var(--red); }
-    .log-item.dup  { border-left: 3px solid var(--muted); }
-    .log-uid { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; flex: 1; }
-    .log-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-    .log-time { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; }
-    .log-badge {
-      font-size: 9px; text-transform: uppercase;
-      letter-spacing: 1px; padding: 2px 7px;
-      border-radius: 4px; font-weight: 700;
-    }
-    .log-item.ok  .log-badge { background: var(--green-dim); color: var(--green); }
-    .log-item.err .log-badge { background: var(--red-dim);   color: var(--red); }
-    .log-item.dup .log-badge { background: rgba(68,68,68,0.2); color: var(--muted); }
-
-    .cfg-wrap { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-    .cfg-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px; cursor: pointer;
-      background: var(--surface);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .cfg-left { display: flex; align-items: center; gap: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
-    .chev { transition: transform 0.2s; color: var(--muted); }
-    .cfg-head.open .chev { transform: rotate(180deg); }
-    .cfg-body { display: none; padding: 16px; border-top: 1px solid var(--border); background: var(--bg); flex-direction: column; gap: 12px; }
-    .cfg-body.open { display: flex; }
-    .f-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px; }
-    .f-input {
-      width: 100%; background: var(--surface);
-      border: 1px solid var(--border); border-radius: 10px;
-      padding: 11px 14px; color: var(--text);
-      font-family: 'Space Mono', monospace; font-size: 12px;
-      outline: none; transition: border-color 0.2s;
-    }
-    .f-input:focus { border-color: var(--accent); }
-    .f-input::placeholder { color: var(--muted); }
-    .btn-save {
-      width: 100%; background: var(--accent); color: #0a0a0a;
-      border: none; border-radius: 10px; padding: 13px;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 700; font-size: 13px; cursor: pointer;
-      letter-spacing: 0.5px; transition: opacity 0.2s;
-    }
-    .btn-save:active { opacity: 0.8; }
-    .hint { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 5px; }
+    body { background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; min-height:100dvh; display:flex; flex-direction:column; overflow-x:hidden; }
+    header { padding:20px 20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .brand-badge { width:38px; height:38px; background:var(--accent); border-radius:9px; display:flex; align-items:center; justify-content:center; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; color:#0a0a0a; }
+    .brand-name { font-size:15px; font-weight:700; }
+    .brand-sub { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-top:1px; }
+    .pill { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:5px 13px; font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); }
+    .pill strong { color:var(--accent); }
+    main { flex:1; display:flex; flex-direction:column; padding:20px; gap:14px; }
+    .scan-btn { border:1.5px solid var(--border); border-radius:20px; background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 24px; gap:18px; min-height:230px; user-select:none; }
+    .scan-btn.scanning { border-color:var(--accent); }
+    .scan-btn.ok { border-color:var(--green); }
+    .scan-btn.err { border-color:var(--red); }
+    .rings { position:relative; width:82px; height:82px; display:flex; align-items:center; justify-content:center; }
+    .ring { position:absolute; border-radius:50%; border:1.5px solid var(--accent); opacity:0; }
+    .r1 { width:82px; height:82px; }
+    .r2 { width:60px; height:60px; }
+    .r3 { width:38px; height:38px; }
+    .scanning .ring { animation:ripple 1.6s ease-out infinite; }
+    .scanning .r2 { animation-delay:0.2s; }
+    .scanning .r3 { animation-delay:0.4s; }
+    @keyframes ripple { 0%{opacity:0.9;transform:scale(0.55);}100%{opacity:0;transform:scale(1.15);} }
+    .nfc-icon { position:relative; z-index:2; }
+    .scan-label { font-size:17px; font-weight:700; text-align:center; }
+    .scan-hint { font-size:12px; color:var(--muted); text-align:center; }
+    .status { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:13px 16px; font-family:'Space Mono',monospace; font-size:12px; transition:border-color 0.3s,background 0.3s; min-height:50px; }
+    .status.ok { border-color:var(--green); background:var(--green-dim); }
+    .status.err { border-color:var(--red); background:var(--red-dim); }
+    .status.info { border-color:var(--accent); background:var(--accent-dim); }
+    .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0; transition:background 0.3s; }
+    .status.ok .dot { background:var(--green); }
+    .status.err .dot { background:var(--red); }
+    .status.info .dot { background:var(--accent); }
+    .log-head { display:flex; align-items:center; justify-content:space-between; }
+    .log-title { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); }
+    .btn-clr { font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; font-family:'Space Grotesk',sans-serif; padding:4px 8px; border-radius:6px; }
+    .log-body { display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto; padding-right:2px; }
+    .log-empty { text-align:center; color:var(--muted); font-size:12px; padding:24px; border:1px dashed var(--border); border-radius:12px; }
+    .log-item { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; animation:slidein 0.2s ease; }
+    @keyframes slidein { from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);} }
+    .log-item.ok { border-left:3px solid var(--green); }
+    .log-item.err { border-left:3px solid var(--red); }
+    .log-item.dup { border-left:3px solid var(--muted); }
+    .log-uid { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; flex:1; }
+    .log-meta { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+    .log-time { font-size:10px; color:var(--muted); font-family:'Space Mono',monospace; }
+    .log-badge { font-size:9px; text-transform:uppercase; letter-spacing:1px; padding:2px 7px; border-radius:4px; font-weight:700; }
+    .log-item.ok .log-badge { background:var(--green-dim); color:var(--green); }
+    .log-item.err .log-badge { background:var(--red-dim); color:var(--red); }
+    .log-item.dup .log-badge { background:rgba(68,68,68,0.2); color:var(--muted); }
+    .cfg-wrap { border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+    .cfg-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; cursor:pointer; background:var(--surface); -webkit-tap-highlight-color:transparent; }
+    .cfg-left { display:flex; align-items:center; gap:8px; font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); }
+    .chev { transition:transform 0.2s; color:var(--muted); }
+    .cfg-head.open .chev { transform:rotate(180deg); }
+    .cfg-body { display:none; padding:16px; border-top:1px solid var(--border); background:var(--bg); flex-direction:column; gap:12px; }
+    .cfg-body.open { display:flex; }
+    .f-label { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; }
+    .f-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 14px; color:var(--text); font-family:'Space Mono',monospace; font-size:12px; outline:none; transition:border-color 0.2s; }
+    .f-input:focus { border-color:var(--accent); }
+    .f-input::placeholder { color:var(--muted); }
+    .btn-save { width:100%; background:var(--accent); color:#0a0a0a; border:none; border-radius:10px; padding:13px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer; letter-spacing:0.5px; transition:opacity 0.2s; }
+    .btn-save:active { opacity:0.8; }
+    .hint { font-size:11px; color:var(--muted); line-height:1.6; margin-top:5px; }
   </style>
 </head>
 <body>
@@ -226,7 +97,6 @@
 </header>
 
 <main>
-
   <div class="scan-btn" id="scanBtn" onclick="startScan()">
     <div class="rings" id="rings">
       <div class="ring r1"></div>
@@ -241,7 +111,7 @@
       </svg>
     </div>
     <div class="scan-label" id="scanLabel">Toque para Escanear</div>
-    <div class="scan-hint"  id="scanHint">Aproxime o cartão MEEP</div>
+    <div class="scan-hint" id="scanHint">Aproxime o cartão MEEP</div>
   </div>
 
   <div class="status" id="statusBar">
@@ -279,12 +149,11 @@
       <button class="btn-save" onclick="saveCfg()">Salvar</button>
     </div>
   </div>
-
 </main>
 
 <script>
-let cfg      = JSON.parse(localStorage.getItem('g17_cfg')  || '{}');
-let log      = JSON.parse(localStorage.getItem('g17_log')  || '[]');
+let cfg      = JSON.parse(localStorage.getItem('g17_cfg') || '{}');
+let log      = JSON.parse(localStorage.getItem('g17_log') || '[]');
 let scanning = false;
 let reader   = null;
 const TODAY  = new Date().toDateString();
@@ -293,7 +162,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (cfg.scriptUrl) document.getElementById('scriptUrl').value = cfg.scriptUrl;
   renderLog();
   updateCounter();
-
   if (!('NDEFReader' in window)) {
     setStatus('NFC não disponível. Use Chrome no Android.', 'err');
     document.getElementById('scanBtn').style.opacity = '0.4';
@@ -325,20 +193,13 @@ async function startScan() {
       const uid = serialNumber
         ? serialNumber.toUpperCase().replace(/:/g, '')
         : readNDEF(message);
-      if (!uid) {
-        setStatus('Não foi possível ler o UID.', 'err');
-        setState('err');
-        reset(2000);
-        return;
-      }
+      if (!uid) { setStatus('Não foi possível ler o UID.', 'err'); setState('err'); reset(2000); return; }
       handleUID(uid);
     };
   } catch (err) {
     scanning = false;
     setState('');
-    setStatus(err.name === 'NotAllowedError'
-      ? 'Permissão NFC negada.'
-      : 'Erro: ' + err.message, 'err');
+    setStatus(err.name === 'NotAllowedError' ? 'Permissão NFC negada.' : 'Erro: ' + err.message, 'err');
   }
 }
 
@@ -355,33 +216,29 @@ function handleUID(uid) {
   vibrate([80, 40, 80]);
   const dup = log.filter(e => e.date === TODAY).some(e => e.uid === uid);
   if (dup) {
-    setStatus('⚠ ' + uid + ' já lido hoje — ignorado', 'err');
+    setStatus('⚠ ' + uid + ' já lido hoje', 'err');
     addLog(uid, 'dup');
     reset(2500);
     return;
   }
-  setStatus('✓ ' + uid + ' — enviando para planilha…', 'info');
+  setStatus('✓ ' + uid + ' — enviando…', 'info');
   sendToSheets(uid);
   reset(3000);
 }
 
 async function sendToSheets(uid) {
-  const now  = new Date();
-  const date = now.toLocaleDateString('pt-BR');
-
+  const date = new Date().toLocaleDateString('pt-BR');
+  // Usa GET com parâmetros — evita CORS do Apps Script
+  const url = cfg.scriptUrl + '?uid=' + encodeURIComponent(uid) + '&date=' + encodeURIComponent(date);
   try {
-    // no-cors para evitar bloqueio CORS do Apps Script
-    await fetch(cfg.scriptUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ uid: uid, date: date })
-    });
-
-    // Com no-cors não há resposta — assume sucesso
-    setStatus('✓ ' + uid + ' enviado para planilha', 'ok');
-    addLog(uid, 'ok');
-
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'ok') {
+      setStatus('✓ ' + uid + ' salvo na planilha!', 'ok');
+      addLog(uid, 'ok');
+    } else {
+      throw new Error(data.message || 'Erro');
+    }
   } catch (err) {
     setStatus('✗ Erro: ' + err.message, 'err');
     addLog(uid, 'err');
@@ -401,10 +258,7 @@ function addLog(uid, status) {
 function renderLog() {
   const body    = document.getElementById('logBody');
   const entries = log.filter(e => e.date === TODAY);
-  if (!entries.length) {
-    body.innerHTML = '<div class="log-empty">Nenhum cartão lido ainda</div>';
-    return;
-  }
+  if (!entries.length) { body.innerHTML = '<div class="log-empty">Nenhum cartão lido ainda</div>'; return; }
   body.innerHTML = entries.map(e =>
     '<div class="log-item ' + e.status + '">' +
     '<div class="log-uid">' + e.uid + '</div>' +
@@ -428,25 +282,14 @@ function updateCounter() {
 }
 
 function setState(s) {
-  const btn   = document.getElementById('scanBtn');
-  const rings = document.getElementById('rings');
-  const label = document.getElementById('scanLabel');
-  const hint  = document.getElementById('scanHint');
-  btn.className   = 'scan-btn ' + s;
-  rings.className = 'rings ' + s;
-  label.textContent = s==='scanning' ? 'Aproxime o Cartão'
-    : s==='ok'  ? 'Leitura OK!'
-    : s==='err' ? 'Tente Novamente'
-    : 'Toque para Escanear';
-  hint.textContent = s==='scanning' ? 'Mantenha próximo até vibrar'
-    : s==='ok'  ? 'Cartão registrado!'
-    : s==='err' ? 'Erro na leitura'
-    : 'Aproxime o cartão MEEP';
+  document.getElementById('scanBtn').className  = 'scan-btn ' + s;
+  document.getElementById('rings').className    = 'rings ' + s;
+  document.getElementById('scanLabel').textContent = s==='scanning'?'Aproxime o Cartão':s==='ok'?'Leitura OK!':s==='err'?'Tente Novamente':'Toque para Escanear';
+  document.getElementById('scanHint').textContent  = s==='scanning'?'Mantenha próximo até vibrar':s==='ok'?'Cartão registrado!':s==='err'?'Erro na leitura':'Aproxime o cartão MEEP';
 }
 
 function setStatus(msg, type) {
-  const bar = document.getElementById('statusBar');
-  bar.className = 'status ' + (type||'');
+  document.getElementById('statusBar').className = 'status ' + (type||'');
   document.getElementById('statusTxt').textContent = msg;
 }
 
