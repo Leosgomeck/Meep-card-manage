@@ -50,6 +50,20 @@
     .status.ok .dot { background:var(--green); }
     .status.err .dot { background:var(--red); }
     .status.info .dot { background:var(--accent); }
+
+    /* Modal de mapeamento */
+    .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:100; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:24px; width:100%; max-width:380px; display:flex; flex-direction:column; gap:16px; }
+    .modal-title { font-size:16px; font-weight:700; color:var(--accent); }
+    .modal-sub { font-size:12px; color:var(--muted); }
+    .modal-chip { font-family:'Space Mono',monospace; font-size:13px; color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
+    .modal-input { width:100%; background:var(--bg); border:1px solid var(--accent); border-radius:10px; padding:14px; color:var(--text); font-family:'Space Mono',monospace; font-size:16px; outline:none; text-transform:uppercase; letter-spacing:2px; text-align:center; }
+    .modal-input::placeholder { color:var(--muted); letter-spacing:0; text-transform:none; font-size:12px; }
+    .modal-btns { display:flex; gap:10px; }
+    .btn-confirmar { flex:1; background:var(--accent); color:#0a0a0a; border:none; border-radius:10px; padding:14px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; cursor:pointer; }
+    .btn-cancelar { flex:1; background:var(--surface); color:var(--muted); border:1px solid var(--border); border-radius:10px; padding:14px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; cursor:pointer; }
+
     .log-head { display:flex; align-items:center; justify-content:space-between; }
     .log-title { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); }
     .btn-clr { font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; font-family:'Space Grotesk',sans-serif; padding:4px 8px; border-radius:6px; }
@@ -95,6 +109,21 @@
   </div>
   <div class="pill">Hoje: <strong id="cnt">0</strong></div>
 </header>
+
+<!-- Modal de mapeamento -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">📋 Cartão Novo!</div>
+    <div class="modal-sub">Chip NFC lido:</div>
+    <div class="modal-chip" id="modalChip">-</div>
+    <div class="modal-sub">Digite o número impresso no cartão:</div>
+    <input class="modal-input" id="modalInput" type="text" placeholder="Ex: A70F3B61" maxlength="20">
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="cancelarModal()">Cancelar</button>
+      <button class="btn-confirmar" onclick="confirmarModal()">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <main>
   <div class="scan-btn" id="scanBtn" onclick="startScan()">
@@ -156,6 +185,7 @@ let cfg      = JSON.parse(localStorage.getItem('g17_cfg') || '{}');
 let log      = JSON.parse(localStorage.getItem('g17_log') || '[]');
 let scanning = false;
 let reader   = null;
+let chipAtual = null;
 const TODAY  = new Date().toDateString();
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -211,25 +241,83 @@ function readNDEF(message) {
   return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
 }
 
-function handleUID(uid) {
+async function handleUID(chip) {
   setState('ok');
   vibrate([80, 40, 80]);
-  const dup = log.filter(e => e.date === TODAY).some(e => e.uid === uid);
+
+  // Duplicata hoje?
+  const dup = log.filter(e => e.date === TODAY).some(e => e.chip === chip);
   if (dup) {
-    setStatus('⚠ ' + uid + ' já lido hoje', 'err');
-    addLog(uid, 'dup');
+    setStatus('⚠ ' + chip + ' já lido hoje', 'err');
+    addLog(chip, chip, 'dup');
     reset(2500);
     return;
   }
-  setStatus('✓ ' + uid + ' — enviando…', 'info');
-  sendToSheets(uid);
+
+  setStatus('🔍 Verificando mapeamento…', 'info');
+
+  // Busca mapeamento no Apps Script
+  try {
+    const url = cfg.scriptUrl + '?acao=buscar&chip=' + encodeURIComponent(chip);
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.cartao) {
+      // Já mapeado — registra direto
+      setStatus('✓ ' + data.cartao + ' — enviando…', 'info');
+      registrarCartao(chip, data.cartao);
+    } else {
+      // Não mapeado — pede número impresso
+      chipAtual = chip;
+      document.getElementById('modalChip').textContent = chip;
+      document.getElementById('modalInput').value = '';
+      document.getElementById('modalOverlay').classList.add('open');
+      document.getElementById('modalInput').focus();
+      setStatus('📋 Digite o número impresso no cartão', 'info');
+      scanning = false;
+    }
+  } catch (err) {
+    // Erro na busca — pede mapeamento manual
+    chipAtual = chip;
+    document.getElementById('modalChip').textContent = chip;
+    document.getElementById('modalInput').value = '';
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('modalInput').focus();
+    scanning = false;
+  }
 }
 
-function sendToSheets(uid) {
-  const date = new Date().toLocaleDateString('pt-BR');
-  const url  = cfg.scriptUrl + '?uid=' + encodeURIComponent(uid) + '&date=' + encodeURIComponent(date);
+async function confirmarModal() {
+  const cartao = document.getElementById('modalInput').value.trim().toUpperCase();
+  if (!cartao) {
+    document.getElementById('modalInput').style.borderColor = 'var(--red)';
+    return;
+  }
+  document.getElementById('modalOverlay').classList.remove('open');
 
-  // Iframe oculto — único método que funciona sem CORS no Apps Script
+  // Salva mapeamento
+  const urlMap = cfg.scriptUrl + '?acao=mapear&chip=' + encodeURIComponent(chipAtual) + '&cartao=' + encodeURIComponent(cartao);
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = urlMap;
+  document.body.appendChild(iframe);
+  setTimeout(() => document.body.removeChild(iframe), 3000);
+
+  // Registra cartão
+  setStatus('✓ ' + cartao + ' — enviando…', 'info');
+  registrarCartao(chipAtual, cartao);
+}
+
+function cancelarModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  setStatus('Cancelado.', 'err');
+  reset(1000);
+}
+
+function registrarCartao(chip, cartao) {
+  const date = new Date().toLocaleDateString('pt-BR');
+  const url  = cfg.scriptUrl + '?acao=registrar&uid=' + encodeURIComponent(cartao) + '&date=' + encodeURIComponent(date);
+
   const iframe = document.createElement('iframe');
   iframe.style.display = 'none';
   iframe.src = url;
@@ -237,15 +325,15 @@ function sendToSheets(uid) {
 
   setTimeout(() => {
     document.body.removeChild(iframe);
-    setStatus('✓ ' + uid + ' enviado para planilha', 'ok');
-    addLog(uid, 'ok');
+    setStatus('✓ ' + cartao + ' salvo na planilha!', 'ok');
+    addLog(chip, cartao, 'ok');
     reset(500);
   }, 3000);
 }
 
-function addLog(uid, status) {
+function addLog(chip, cartao, status) {
   const now = new Date();
-  log.unshift({ uid, status, date: TODAY,
+  log.unshift({ chip, cartao, uid: cartao, status, date: TODAY,
     time: now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' }) });
   if (log.length > 200) log = log.slice(0, 200);
   localStorage.setItem('g17_log', JSON.stringify(log));
@@ -259,7 +347,7 @@ function renderLog() {
   if (!entries.length) { body.innerHTML = '<div class="log-empty">Nenhum cartão lido ainda</div>'; return; }
   body.innerHTML = entries.map(e =>
     '<div class="log-item ' + e.status + '">' +
-    '<div class="log-uid">' + e.uid + '</div>' +
+    '<div class="log-uid">' + (e.cartao || e.uid) + '</div>' +
     '<div class="log-meta">' +
     '<div class="log-time">' + e.time + '</div>' +
     '<div class="log-badge">' + (e.status==='ok'?'Salvo':e.status==='err'?'Erro':'Duplic.') + '</div>' +
