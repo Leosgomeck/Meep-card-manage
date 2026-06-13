@@ -78,7 +78,7 @@
     .f-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 14px; color:var(--text); font-family:'Space Mono',monospace; font-size:12px; outline:none; transition:border-color 0.2s; }
     .f-input:focus { border-color:var(--accent); }
     .f-input::placeholder { color:var(--muted); }
-    .btn-save { width:100%; background:var(--accent); color:#0a0a0a; border:none; border-radius:10px; padding:13px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer; letter-spacing:0.5px; transition:opacity 0.2s; }
+    .btn-save { width:100%; background:var(--accent); color:#0a0a0a; border:none; border-radius:10px; padding:13px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer; }
     .btn-save:active { opacity:0.8; }
     .hint { font-size:11px; color:var(--muted); line-height:1.6; margin-top:5px; }
   </style>
@@ -223,26 +223,24 @@ function handleUID(uid) {
   }
   setStatus('✓ ' + uid + ' — enviando…', 'info');
   sendToSheets(uid);
-  reset(3000);
 }
 
-async function sendToSheets(uid) {
+function sendToSheets(uid) {
   const date = new Date().toLocaleDateString('pt-BR');
-  // Usa GET com parâmetros — evita CORS do Apps Script
-  const url = cfg.scriptUrl + '?uid=' + encodeURIComponent(uid) + '&date=' + encodeURIComponent(date);
-  try {
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (data.status === 'ok') {
-      setStatus('✓ ' + uid + ' salvo na planilha!', 'ok');
-      addLog(uid, 'ok');
-    } else {
-      throw new Error(data.message || 'Erro');
-    }
-  } catch (err) {
-    setStatus('✗ Erro: ' + err.message, 'err');
-    addLog(uid, 'err');
-  }
+  const url  = cfg.scriptUrl + '?uid=' + encodeURIComponent(uid) + '&date=' + encodeURIComponent(date);
+
+  // Iframe oculto — único método que funciona sem CORS no Apps Script
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.src = url;
+  document.body.appendChild(iframe);
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+    setStatus('✓ ' + uid + ' enviado para planilha', 'ok');
+    addLog(uid, 'ok');
+    reset(500);
+  }, 3000);
 }
 
 function addLog(uid, status) {
@@ -282,8 +280,8 @@ function updateCounter() {
 }
 
 function setState(s) {
-  document.getElementById('scanBtn').className  = 'scan-btn ' + s;
-  document.getElementById('rings').className    = 'rings ' + s;
+  document.getElementById('scanBtn').className = 'scan-btn ' + s;
+  document.getElementById('rings').className   = 'rings ' + s;
   document.getElementById('scanLabel').textContent = s==='scanning'?'Aproxime o Cartão':s==='ok'?'Leitura OK!':s==='err'?'Tente Novamente':'Toque para Escanear';
   document.getElementById('scanHint').textContent  = s==='scanning'?'Mantenha próximo até vibrar':s==='ok'?'Cartão registrado!':s==='err'?'Erro na leitura':'Aproxime o cartão MEEP';
 }
