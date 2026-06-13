@@ -35,7 +35,6 @@
       overflow-x: hidden;
     }
 
-    /* HEADER */
     header {
       padding: 20px 20px 16px;
       border-bottom: 1px solid var(--border);
@@ -65,10 +64,8 @@
     }
     .pill strong { color: var(--accent); }
 
-    /* MAIN */
     main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 14px; }
 
-    /* SCAN BUTTON */
     .scan-btn {
       border: 1.5px solid var(--border);
       border-radius: 20px;
@@ -89,7 +86,6 @@
     .scan-btn.ok       { border-color: var(--green); }
     .scan-btn.err      { border-color: var(--red); }
 
-    /* NFC rings */
     .rings { position: relative; width: 82px; height: 82px; display: flex; align-items: center; justify-content: center; }
     .ring {
       position: absolute; border-radius: 50%;
@@ -110,7 +106,6 @@
     .scan-label { font-size: 17px; font-weight: 700; text-align: center; }
     .scan-hint  { font-size: 12px; color: var(--muted); text-align: center; }
 
-    /* STATUS */
     .status {
       display: flex; align-items: center; gap: 10px;
       background: var(--surface);
@@ -134,7 +129,6 @@
     .status.err  .dot { background: var(--red); }
     .status.info .dot { background: var(--accent); }
 
-    /* LOG */
     .log-head {
       display: flex; align-items: center; justify-content: space-between;
     }
@@ -185,7 +179,6 @@
     .log-item.err .log-badge { background: var(--red-dim);   color: var(--red); }
     .log-item.dup .log-badge { background: rgba(68,68,68,0.2); color: var(--muted); }
 
-    /* SETTINGS */
     .cfg-wrap { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
     .cfg-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -281,7 +274,7 @@
       <div>
         <div class="f-label">URL do Google Apps Script</div>
         <input class="f-input" id="scriptUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec">
-        <div class="hint">URL gerada ao publicar o arquivo <strong>2-apps-script.gs</strong> como Web App.</div>
+        <div class="hint">Cole a URL do Web App publicado.</div>
       </div>
       <button class="btn-save" onclick="saveCfg()">Salvar</button>
     </div>
@@ -290,14 +283,12 @@
 </main>
 
 <script>
-// ─── Estado ───────────────────────────────────────────────
 let cfg      = JSON.parse(localStorage.getItem('g17_cfg')  || '{}');
 let log      = JSON.parse(localStorage.getItem('g17_log')  || '[]');
 let scanning = false;
 let reader   = null;
 const TODAY  = new Date().toDateString();
 
-// ─── Init ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   if (cfg.scriptUrl) document.getElementById('scriptUrl').value = cfg.scriptUrl;
   renderLog();
@@ -312,35 +303,28 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ─── NFC ──────────────────────────────────────────────────
 async function startScan() {
   if (scanning) return;
-
   if (!cfg.scriptUrl) {
-    setStatus('Configure a URL do Apps Script primeiro ⚙', 'err');
+    setStatus('Configure a URL do Apps Script primeiro', 'err');
     toggleCfg(true);
     return;
   }
-
   try {
     scanning = true;
     setState('scanning');
     setStatus('Aproxime o cartão MEEP…', 'info');
-
     reader = new NDEFReader();
     await reader.scan();
-
     reader.onreadingerror = () => {
       setStatus('Erro na leitura. Tente novamente.', 'err');
       setState('err');
       reset(2000);
     };
-
     reader.onreading = ({ serialNumber, message }) => {
       const uid = serialNumber
         ? serialNumber.toUpperCase().replace(/:/g, '')
         : readNDEF(message);
-
       if (!uid) {
         setStatus('Não foi possível ler o UID.', 'err');
         setState('err');
@@ -349,22 +333,19 @@ async function startScan() {
       }
       handleUID(uid);
     };
-
   } catch (err) {
     scanning = false;
     setState('');
     setStatus(err.name === 'NotAllowedError'
-      ? 'Permissão NFC negada. Verifique as configurações.'
+      ? 'Permissão NFC negada.'
       : 'Erro: ' + err.message, 'err');
   }
 }
 
 function readNDEF(message) {
-  if (!message?.records?.length) return null;
+  if (!message || !message.records || !message.records.length) return null;
   const rec = message.records[0];
-  if (rec.recordType === 'text') {
-    return new TextDecoder().decode(rec.data).trim().toUpperCase();
-  }
+  if (rec.recordType === 'text') return new TextDecoder().decode(rec.data).trim().toUpperCase();
   const bytes = new Uint8Array(rec.data.buffer || rec.data);
   return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
 }
@@ -372,47 +353,41 @@ function readNDEF(message) {
 function handleUID(uid) {
   setState('ok');
   vibrate([80, 40, 80]);
-
-  // Duplicata hoje?
   const dup = log.filter(e => e.date === TODAY).some(e => e.uid === uid);
   if (dup) {
-    setStatus(`⚠ ${uid} já lido hoje — ignorado`, 'err');
+    setStatus('⚠ ' + uid + ' já lido hoje — ignorado', 'err');
     addLog(uid, 'dup');
     reset(2500);
     return;
   }
-
-  setStatus(`✓ ${uid} — enviando para planilha…`, 'info');
+  setStatus('✓ ' + uid + ' — enviando para planilha…', 'info');
   sendToSheets(uid);
   reset(3000);
 }
 
-// ─── Google Sheets ────────────────────────────────────────
 async function sendToSheets(uid) {
   const now  = new Date();
   const date = now.toLocaleDateString('pt-BR');
 
   try {
-    const res  = await fetch(cfg.scriptUrl, {
+    // no-cors para evitar bloqueio CORS do Apps Script
+    await fetch(cfg.scriptUrl, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ uid, date })
+      body: JSON.stringify({ uid: uid, date: date })
     });
-    const data = await res.json();
 
-    if (data.status === 'ok') {
-      setStatus(`✓ ${uid} salvo na planilha — automação iniciada`, 'ok');
-      addLog(uid, 'ok');
-    } else {
-      throw new Error(data.message || 'Erro desconhecido');
-    }
+    // Com no-cors não há resposta — assume sucesso
+    setStatus('✓ ' + uid + ' enviado para planilha', 'ok');
+    addLog(uid, 'ok');
+
   } catch (err) {
-    setStatus(`✗ Erro: ${err.message}`, 'err');
+    setStatus('✗ Erro: ' + err.message, 'err');
     addLog(uid, 'err');
   }
 }
 
-// ─── Log ──────────────────────────────────────────────────
 function addLog(uid, status) {
   const now = new Date();
   log.unshift({ uid, status, date: TODAY,
@@ -430,14 +405,14 @@ function renderLog() {
     body.innerHTML = '<div class="log-empty">Nenhum cartão lido ainda</div>';
     return;
   }
-  body.innerHTML = entries.map(e => `
-    <div class="log-item ${e.status}">
-      <div class="log-uid">${e.uid}</div>
-      <div class="log-meta">
-        <div class="log-time">${e.time}</div>
-        <div class="log-badge">${e.status==='ok'?'Salvo':e.status==='err'?'Erro':'Duplic.'}</div>
-      </div>
-    </div>`).join('');
+  body.innerHTML = entries.map(e =>
+    '<div class="log-item ' + e.status + '">' +
+    '<div class="log-uid">' + e.uid + '</div>' +
+    '<div class="log-meta">' +
+    '<div class="log-time">' + e.time + '</div>' +
+    '<div class="log-badge">' + (e.status==='ok'?'Salvo':e.status==='err'?'Erro':'Duplic.') + '</div>' +
+    '</div></div>'
+  ).join('');
 }
 
 function clearLog() {
@@ -452,7 +427,6 @@ function updateCounter() {
     log.filter(e => e.date === TODAY && e.status === 'ok').length;
 }
 
-// ─── UI ───────────────────────────────────────────────────
 function setState(s) {
   const btn   = document.getElementById('scanBtn');
   const rings = document.getElementById('rings');
