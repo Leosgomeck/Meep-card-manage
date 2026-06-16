@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
+<!-- saved from url=(0051)file:///C:/Users/Galpao17/Downloads/painel-g17.html -->
+<html lang="pt-BR"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0a0a0a">
   <meta name="mobile-web-app-capable" content="yes">
@@ -80,6 +80,8 @@
     .f-input::placeholder { color:var(--muted); }
     .btn-save { width:100%; background:var(--accent); color:#0a0a0a; border:none; border-radius:10px; padding:13px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer; }
     .btn-save:active { opacity:0.8; }
+    .btn-test { width:100%; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:11px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer; margin-top:-4px; }
+    .btn-test:active { opacity:0.7; }
     .hint { font-size:11px; color:var(--muted); line-height:1.6; margin-top:5px; }
   </style>
 </head>
@@ -97,47 +99,45 @@
 </header>
 
 <main>
-  <div class="scan-btn" id="scanBtn" onclick="startScan()">
+  <div class="scan-btn" id="scanBtn" onclick="startScan()" style="opacity: 0.4; pointer-events: none;">
     <div class="rings" id="rings">
       <div class="ring r1"></div>
       <div class="ring r2"></div>
       <div class="ring r3"></div>
       <svg class="nfc-icon" width="30" height="30" viewBox="0 0 24 24" fill="none">
-        <path d="M20 12C20 7.58 16.42 4 12 4" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M17 12C17 9.24 14.76 7 12 7" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M14 12C14 10.9 13.1 10 12 10" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="12" cy="12" r="2" fill="#e8ff3b"/>
-        <path d="M4 12C4 16.42 7.58 20 12 20" stroke="#444" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 12C20 7.58 16.42 4 12 4" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M17 12C17 9.24 14.76 7 12 7" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M14 12C14 10.9 13.1 10 12 10" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"></path>
+        <circle cx="12" cy="12" r="2" fill="#e8ff3b"></circle>
+        <path d="M4 12C4 16.42 7.58 20 12 20" stroke="#444" stroke-width="2" stroke-linecap="round"></path>
       </svg>
     </div>
     <div class="scan-label" id="scanLabel">Toque para Escanear</div>
     <div class="scan-hint" id="scanHint">Aproxime o cartão MEEP</div>
   </div>
 
-  <div class="status" id="statusBar">
+  <div class="status err" id="statusBar">
     <div class="dot"></div>
-    <span id="statusTxt">Aguardando leitura…</span>
+    <span id="statusTxt">NFC não disponível. Use Chrome no Android.</span>
   </div>
 
   <div class="log-head">
     <div class="log-title">Leituras de Hoje</div>
     <button class="btn-clr" onclick="clearLog()">Limpar</button>
   </div>
-  <div class="log-body" id="logBody">
-    <div class="log-empty">Nenhum cartão lido ainda</div>
-  </div>
+  <div class="log-body" id="logBody"><div class="log-empty">Nenhum cartão lido ainda</div></div>
 
   <div class="cfg-wrap">
     <div class="cfg-head" id="cfgHead" onclick="toggleCfg()">
       <div class="cfg-left">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
         Configuração
       </div>
       <svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="6,9 12,15 18,9"/>
+        <polyline points="6,9 12,15 18,9"></polyline>
       </svg>
     </div>
     <div class="cfg-body" id="cfgBody">
@@ -147,6 +147,7 @@
         <div class="hint">Cole a URL do Web App publicado.</div>
       </div>
       <button class="btn-save" onclick="saveCfg()">Salvar</button>
+      <button class="btn-test" onclick="testConnection()">Testar Conexão</button>
     </div>
   </div>
 </main>
@@ -221,25 +222,41 @@ function handleUID(uid) {
     reset(2500);
     return;
   }
-  setStatus('✓ ' + uid + ' — enviando…', 'info');
+  setStatus('Enviando ' + uid + '…', 'info');
   sendToSheets(uid);
 }
 
-function sendToSheets(uid) {
+// ─── CORRIGIDO: fetch no-cors substitui iframe (mais confiável no Chrome Android) ───
+async function sendToSheets(uid) {
   const date = new Date().toLocaleDateString('pt-BR');
-  const url  = cfg.scriptUrl + '?uid=' + encodeURIComponent(uid) + '&date=' + encodeURIComponent(date);
+  const url  = cfg.scriptUrl
+    + '?uid='  + encodeURIComponent(uid)
+    + '&date=' + encodeURIComponent(date);
 
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = url;
-  document.body.appendChild(iframe);
-
-  setTimeout(() => {
-    document.body.removeChild(iframe);
+  try {
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    // no-cors não retorna corpo, mas o request chegou ao servidor
     setStatus('✓ ' + uid + ' enviado para planilha', 'ok');
     addLog(uid, 'ok');
-    reset(500);
-  }, 3000);
+  } catch (err) {
+    setStatus('❌ Falha no envio: ' + err.message, 'err');
+    setState('err');
+    addLog(uid, 'err');
+  }
+  reset(500);
+}
+
+// ─── NOVO: botão para testar a URL do Apps Script ───
+async function testConnection() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  if (!url) { setStatus('Cole a URL antes de testar', 'err'); return; }
+  setStatus('Testando conexão…', 'info');
+  try {
+    await fetch(url + '?uid=TESTE_CONN&date=teste', { method: 'GET', mode: 'no-cors' });
+    setStatus('✓ Apps Script respondeu — verifique a planilha', 'ok');
+  } catch (err) {
+    setStatus('❌ Sem resposta: ' + err.message, 'err');
+  }
 }
 
 function addLog(uid, status) {
@@ -315,5 +332,6 @@ function saveCfg() {
   setStatus('Configuração salva!', 'ok');
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
