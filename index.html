@@ -249,7 +249,7 @@ async function sendToSheets(uid) {
 
   console.log('[G17] sendToSheets URL:', url);
   try {
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    await fetch(url, { method: 'GET', mode: 'no-cors', keepalive: true });
     // no-cors não retorna corpo, mas o request chegou ao servidor
     setStatus('✓ ' + uid + ' enviado para planilha', 'ok');
     addLog(uid, 'ok');
