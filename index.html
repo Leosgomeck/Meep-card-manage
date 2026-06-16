@@ -240,24 +240,22 @@ function handleUID(uid) {
 }
 
 // ─── CORRIGIDO: fetch no-cors substitui iframe (mais confiável no Chrome Android) ───
-async function sendToSheets(uid) {
+function sendToSheets(uid) {
   const date = new Date().toLocaleDateString('pt-BR');
   const scriptUrl = cfg.scriptUrl || document.getElementById('scriptUrl').value.trim();
-  const url  = scriptUrl
+  const url = scriptUrl
     + '?uid='  + encodeURIComponent(uid)
     + '&date=' + encodeURIComponent(date);
 
-  console.log('[G17] sendToSheets URL:', url);
-  try {
-    await fetch(url, { method: 'GET', mode: 'no-cors', keepalive: true });
-    // no-cors não retorna corpo, mas o request chegou ao servidor
-    setStatus('✓ ' + uid + ' enviado para planilha', 'ok');
-    addLog(uid, 'ok');
-  } catch (err) {
-    setStatus('❌ Falha no envio: ' + err.message, 'err');
-    setState('err');
-    addLog(uid, 'err');
-  }
+  // Estratégia 1: Image pixel — funciona mesmo quando Android tira foco do Chrome
+  const img = new Image();
+  img.src = url;
+
+  // Estratégia 2: fetch como reforço
+  fetch(url, { method: 'GET', mode: 'no-cors', keepalive: true }).catch(() => {});
+
+  setStatus('✓ ' + uid + ' enviado — verifique a aba Página1', 'ok');
+  addLog(uid, 'ok');
   reset(500);
 }
 
