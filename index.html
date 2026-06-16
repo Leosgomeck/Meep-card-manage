@@ -241,35 +241,56 @@ function handleUID(uid) {
 
 // ─── CORRIGIDO: fetch no-cors substitui iframe (mais confiável no Chrome Android) ───
 function sendToSheets(uid) {
-  const date = new Date().toLocaleDateString('pt-BR');
+  const date      = new Date().toLocaleDateString('pt-BR');
   const scriptUrl = cfg.scriptUrl || document.getElementById('scriptUrl').value.trim();
-  const url = scriptUrl
-    + '?uid='  + encodeURIComponent(uid)
-    + '&date=' + encodeURIComponent(date);
+  const cbName    = 'g17cb_' + Date.now();
+  const url       = scriptUrl
+    + '?uid='      + encodeURIComponent(uid)
+    + '&date='     + encodeURIComponent(date)
+    + '&callback=' + cbName;
 
-  // Estratégia 1: Image pixel — funciona mesmo quando Android tira foco do Chrome
-  const img = new Image();
-  img.src = url;
+  // JSONP — script tags nunca são bloqueadas por CORS
+  window[cbName] = function(data) {
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+    if (data.status === 'ok') {
+      setStatus('✓ ' + uid + ' confirmado na planilha', 'ok');
+      addLog(uid, 'ok');
+    } else {
+      setStatus('❌ Erro Apps Script: ' + data.message, 'err');
+      addLog(uid, 'err');
+    }
+    reset(500);
+  };
 
-  // Estratégia 2: fetch como reforço
-  fetch(url, { method: 'GET', mode: 'no-cors', keepalive: true }).catch(() => {});
-
-  setStatus('✓ ' + uid + ' enviado — verifique a aba Página1', 'ok');
-  addLog(uid, 'ok');
-  reset(500);
+  const script = document.createElement('script');
+  script.src = url;
+  script.onerror = function() {
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+    setStatus('❌ Falha de rede', 'err');
+    addLog(uid, 'err');
+    reset(500);
+  };
+  document.head.appendChild(script);
+  setStatus('Enviando ' + uid + '…', 'info');
 }
 
 // ─── NOVO: botão para testar a URL do Apps Script ───
-async function testConnection() {
+function testConnection() {
   const url = document.getElementById('scriptUrl').value.trim();
   if (!url) { setStatus('Cole a URL antes de testar', 'err'); return; }
   setStatus('Testando conexão…', 'info');
-  try {
-    await fetch(url + '?uid=TESTE_CONN&date=teste', { method: 'GET', mode: 'no-cors' });
-    setStatus('✓ Apps Script respondeu — verifique a planilha', 'ok');
-  } catch (err) {
-    setStatus('❌ Sem resposta: ' + err.message, 'err');
-  }
+  const cbName = 'g17test_' + Date.now();
+  window[cbName] = function(data) {
+    delete window[cbName];
+    if (s.parentNode) s.parentNode.removeChild(s);
+    setStatus(data.status === 'ok' ? '✓ Conectado! Verifique a planilha.' : '❌ Erro: ' + data.message, data.status === 'ok' ? 'ok' : 'err');
+  };
+  const s = document.createElement('script');
+  s.src = url + '?uid=TESTE_CONN&date=teste&callback=' + cbName;
+  s.onerror = () => { delete window[cbName]; setStatus('❌ Sem resposta do servidor', 'err'); };
+  document.head.appendChild(s);
 }
 
 function addLog(uid, status) {
