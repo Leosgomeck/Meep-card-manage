@@ -1,370 +1,102 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0a0a0a">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>G17 · Leitor NFC</title>
+  <base target="_top">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg:#0a0a0a; --surface:#141414; --border:#1f1f1f;
-      --accent:#e8ff3b; --accent-dim:rgba(232,255,59,0.10);
-      --red:#ff4444; --red-dim:rgba(255,68,68,0.12);
-      --green:#3bffb0; --green-dim:rgba(59,255,176,0.12);
-      --muted:#444; --text:#efefef;
-    }
-    body { background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; min-height:100dvh; display:flex; flex-direction:column; overflow-x:hidden; }
-    header { padding:20px 20px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-    .brand { display:flex; align-items:center; gap:10px; }
-    .brand-badge { width:38px; height:38px; background:var(--accent); border-radius:9px; display:flex; align-items:center; justify-content:center; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; color:#0a0a0a; }
-    .brand-name { font-size:15px; font-weight:700; }
-    .brand-sub { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-top:1px; }
-    .pill { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:5px 13px; font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); }
-    .pill strong { color:var(--accent); }
-    main { flex:1; display:flex; flex-direction:column; padding:20px; gap:14px; }
-    .scan-btn { border:1.5px solid var(--border); border-radius:20px; background:var(--surface); cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 24px; gap:18px; min-height:230px; user-select:none; }
-    .scan-btn.scanning { border-color:var(--accent); }
-    .scan-btn.ok { border-color:var(--green); }
-    .scan-btn.err { border-color:var(--red); }
-    .rings { position:relative; width:82px; height:82px; display:flex; align-items:center; justify-content:center; }
-    .ring { position:absolute; border-radius:50%; border:1.5px solid var(--accent); opacity:0; }
-    .r1 { width:82px; height:82px; }
-    .r2 { width:60px; height:60px; }
-    .r3 { width:38px; height:38px; }
-    .scanning .ring { animation:ripple 1.6s ease-out infinite; }
-    .scanning .r2 { animation-delay:0.2s; }
-    .scanning .r3 { animation-delay:0.4s; }
-    @keyframes ripple { 0%{opacity:0.9;transform:scale(0.55);}100%{opacity:0;transform:scale(1.15);} }
-    .nfc-icon { position:relative; z-index:2; }
-    .scan-label { font-size:17px; font-weight:700; text-align:center; }
-    .scan-hint { font-size:12px; color:var(--muted); text-align:center; }
-    .status { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:13px 16px; font-family:'Space Mono',monospace; font-size:12px; transition:border-color 0.3s,background 0.3s; min-height:50px; }
-    .status.ok { border-color:var(--green); background:var(--green-dim); }
-    .status.err { border-color:var(--red); background:var(--red-dim); }
-    .status.info { border-color:var(--accent); background:var(--accent-dim); }
-    .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0; transition:background 0.3s; }
-    .status.ok .dot { background:var(--green); }
-    .status.err .dot { background:var(--red); }
-    .status.info .dot { background:var(--accent); }
-    .log-head { display:flex; align-items:center; justify-content:space-between; }
-    .log-title { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); }
-    .btn-clr { font-size:11px; color:var(--muted); background:none; border:none; cursor:pointer; font-family:'Space Grotesk',sans-serif; padding:4px 8px; border-radius:6px; }
-    .log-body { display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto; padding-right:2px; }
-    .log-empty { text-align:center; color:var(--muted); font-size:12px; padding:24px; border:1px dashed var(--border); border-radius:12px; }
-    .log-item { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; animation:slidein 0.2s ease; }
-    @keyframes slidein { from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);} }
-    .log-item.ok { border-left:3px solid var(--green); }
-    .log-item.err { border-left:3px solid var(--red); }
-    .log-item.dup { border-left:3px solid var(--muted); }
-    .log-uid { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; flex:1; }
-    .log-meta { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
-    .log-time { font-size:10px; color:var(--muted); font-family:'Space Mono',monospace; }
-    .log-badge { font-size:9px; text-transform:uppercase; letter-spacing:1px; padding:2px 7px; border-radius:4px; font-weight:700; }
-    .log-item.ok .log-badge { background:var(--green-dim); color:var(--green); }
-    .log-item.err .log-badge { background:var(--red-dim); color:var(--red); }
-    .log-item.dup .log-badge { background:rgba(68,68,68,0.2); color:var(--muted); }
-    .cfg-wrap { border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-    .cfg-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; cursor:pointer; background:var(--surface); -webkit-tap-highlight-color:transparent; }
-    .cfg-left { display:flex; align-items:center; gap:8px; font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); }
-    .chev { transition:transform 0.2s; color:var(--muted); }
-    .cfg-head.open .chev { transform:rotate(180deg); }
-    .cfg-body { display:none; padding:16px; border-top:1px solid var(--border); background:var(--bg); flex-direction:column; gap:12px; }
-    .cfg-body.open { display:flex; }
-    .f-label { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; }
-    .f-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 14px; color:var(--text); font-family:'Space Mono',monospace; font-size:12px; outline:none; transition:border-color 0.2s; }
-    .f-input:focus { border-color:var(--accent); }
-    .f-input::placeholder { color:var(--muted); }
-    .btn-save { width:100%; background:var(--accent); color:#0a0a0a; border:none; border-radius:10px; padding:13px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer; }
-    .btn-save:active { opacity:0.8; }
-    .btn-test { width:100%; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:11px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; cursor:pointer; margin-top:-4px; }
-    .btn-test:active { opacity:0.7; }
-    .hint { font-size:11px; color:var(--muted); line-height:1.6; margin-top:5px; }
+    body { font-family: Arial, sans-serif; margin: 20px; text-align: center; background-color: #f4f4f9; }
+    button { background-color: #4CAF50; color: white; padding: 15px 32px; font-size: 16px; border: none; border-radius: 4px; cursor: pointer; width: 100%; max-width: 300px; margin-bottom: 20px; }
+    button:disabled { background-color: #cccccc; }
+    textarea { width: 100%; max-width: 500px; height: 200px; margin-top: 10px; font-family: monospace; padding: 10px; box-sizing: border-box; }
+    #status { margin: 15px 0; font-weight: bold; color: #333; }
+    .log-container { max-width: 500px; margin: 0 auto; text-align: left; }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <div class="brand-badge">G17</div>
-    <div>
-      <div class="brand-name">Leitor NFC</div>
-      <div class="brand-sub">MEEP · Cartões</div>
-    </div>
-  </div>
-  <div class="pill">Hoje: <strong id="cnt">0</strong></div>
-</header>
+  <h2>Leitor de Cartão NFC</h2>
+  <p>Aproxime o cartão do celular após ativar a leitura. Os dados formatados para planilha aparecerão abaixo.</p>
 
-<main>
-  <div class="scan-btn" id="scanBtn" onclick="startScan()">
-    <div class="rings" id="rings">
-      <div class="ring r1"></div>
-      <div class="ring r2"></div>
-      <div class="ring r3"></div>
-      <svg class="nfc-icon" width="30" height="30" viewBox="0 0 24 24" fill="none">
-        <path d="M20 12C20 7.58 16.42 4 12 4" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M17 12C17 9.24 14.76 7 12 7" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M14 12C14 10.9 13.1 10 12 10" stroke="#e8ff3b" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="12" cy="12" r="2" fill="#e8ff3b"/>
-        <path d="M4 12C4 16.42 7.58 20 12 20" stroke="#444" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <div class="scan-label" id="scanLabel">Toque para Escanear</div>
-    <div class="scan-hint" id="scanHint">Aproxime o cartão MEEP</div>
+  <button id="scanBtn">Iniciar Leitura NFC</button>
+  <div id="status">Status: Pronto para iniciar.</div>
+
+  <div class="log-container">
+    <label for="output">Dados para copiar (Formato Tabulação/Planilha):</label>
+    <textarea id="output" readonly placeholder="Os dados lidos aparecerão aqui..."></textarea>
+    <br><br>
+    <button id="copyBtn" style="background-color: #008CBA;">Copiar Dados</button>
   </div>
 
-  <div class="status" id="statusBar">
-    <div class="dot"></div>
-    <span id="statusTxt">Aguardando leitura…</span>
-  </div>
+  <script>
+    const scanBtn = document.getElementById('scanBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const statusDiv = document.getElementById('status');
+    const outputText = document.getElementById('output');
 
-  <div class="log-head">
-    <div class="log-title">Leituras de Hoje</div>
-    <button class="btn-clr" onclick="clearLog()">Limpar</button>
-  </div>
-  <div class="log-body" id="logBody">
-    <div class="log-empty">Nenhum cartão lido ainda</div>
-  </div>
+    // Cabeçalho da tabela (Data/Hora, ID do Cartão, Conteúdo)
+    outputText.value = "Data/Hora\tID do Cartão\tConteúdo Lido\n";
 
-  <div class="cfg-wrap">
-    <div class="cfg-head" id="cfgHead" onclick="toggleCfg()">
-      <div class="cfg-left">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-        Configuração
-      </div>
-      <svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="6,9 12,15 18,9"/>
-      </svg>
-    </div>
-    <div class="cfg-body" id="cfgBody">
-      <div>
-        <div class="f-label">URL do Google Apps Script</div>
-        <input class="f-input" id="scriptUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec">
-        <div class="hint">Cole a URL do Web App publicado.</div>
-      </div>
-      <button class="btn-save" onclick="saveCfg()">Salvar</button>
-      <button class="btn-test" onclick="testConnection()">Testar Conexão</button>
-      <button class="btn-test" onclick="simularLeitura()" style="margin-top:8px;border-color:var(--muted);color:var(--muted)">🧪 Simular Leitura (sem NFC)</button>
-    </div>
-  </div>
-</main>
+    scanBtn.addEventListener('click', async () => {
+      if ('NDEFReader' in window) {
+        try {
+          const ndef = new NDEFReader();
+          await ndef.scan();
+          
+          statusDiv.innerText = "Status: 📡 Buscando tag NFC... Aproxime o cartão.";
+          statusDiv.style.color = "blue";
+          scanBtn.disabled = true;
 
-<script>
-let cfg      = JSON.parse(localStorage.getItem('g17_cfg') || '{}');
-let log      = JSON.parse(localStorage.getItem('g17_log') || '[]');
-let scanning = false;
-let reader   = null;
-const TODAY  = new Date().toDateString();
+          ndef.addEventListener("readingerror", () => {
+            statusDiv.innerText = "Erro: Não foi possível ler a tag. Tente novamente.";
+            statusDiv.style.color = "red";
+          });
 
-window.addEventListener('DOMContentLoaded', () => {
-  if (cfg.scriptUrl) document.getElementById('scriptUrl').value = cfg.scriptUrl;
-  renderLog();
-  updateCounter();
-  if (!('NDEFReader' in window)) {
-    setStatus('NFC não disponível. Use Chrome no Android.', 'err');
-    document.getElementById('scanBtn').style.opacity = '0.4';
-    document.getElementById('scanBtn').style.pointerEvents = 'none';
-  } else {
-    setStatus('Pronto — toque para escanear o cartão', 'info');
-  }
-});
+          ndef.addEventListener("reading", ({ message, serialNumber }) => {
+            statusDiv.innerText = "Status: ✅ Cartão lido com sucesso!";
+            statusDiv.style.color = "green";
+            
+            let numSerie = serialNumber || "N/A";
+            let textoLido = "";
 
-function simularLeitura() {
-  const scriptUrl = cfg.scriptUrl || document.getElementById('scriptUrl').value.trim();
-  if (!scriptUrl) { setStatus('Configure a URL do Apps Script primeiro', 'err'); toggleCfg(true); return; }
-  cfg.scriptUrl = scriptUrl;
-  const uid = 'SIM' + Date.now().toString(36).toUpperCase().slice(-5);
-  setStatus('🧪 Simulando UID: ' + uid, 'info');
-  handleUID(uid);
-}
+            // Processa as mensagens de texto dentro do NFC, se houverem
+            for (const record of message.records) {
+              if (record.recordType === "text") {
+                const textDecoder = new TextDecoder(record.encoding);
+                textoLido += textDecoder.decode(record.data) + " ";
+              }
+            }
+            if(!textoLido) textoLido = "Apenas ID detectado";
 
-async function startScan() {
-  setStatus('⚡ startScan chamado...', 'info');
-  if (scanning) { setStatus('⚠ scanning travado = true', 'err'); return; }
-  if (!cfg.scriptUrl) {
-    setStatus('Configure a URL do Apps Script primeiro', 'err');
-    toggleCfg(true);
-    return;
-  }
-  try {
-    scanning = true;
-    setState('scanning');
-    setStatus('Aproxime o cartão MEEP…', 'info');
-    reader = new NDEFReader();
-    await reader.scan();
-    reader.onreadingerror = () => {
-      setStatus('Erro na leitura. Tente novamente.', 'err');
-      setState('err');
-      reset(2000);
-    };
-    reader.onreading = ({ serialNumber, message }) => {
-      const uid = serialNumber
-        ? serialNumber.toUpperCase().replace(/:/g, '')
-        : readNDEF(message);
-      if (!uid) { setStatus('Não foi possível ler o UID.', 'err'); setState('err'); reset(2000); return; }
-      handleUID(uid);
-    };
-  } catch (err) {
-    scanning = false;
-    setState('');
-    setStatus(err.name === 'NotAllowedError' ? 'Permissão NFC negada.' : 'Erro: ' + err.message, 'err');
-  }
-}
+            // Formata no padrão de linhas e abas (\t separa as colunas na planilha)
+            const agora = new Date().toLocaleString('pt-BR');
+            const novaLinha = `${agora}\t${numSerie}\t${textoLido.trim()}\n`;
+            
+            // Adiciona a nova linha na caixa de texto
+            outputText.value += novaLinha;
+            
+            // Restaura o botão após 2 segundos para nova leitura
+            setTimeout(() => {
+              statusDiv.innerText = "Status: 📡 Aguardando próximo cartão...";
+              statusDiv.style.color = "blue";
+            }, 2000);
+          });
 
-function readNDEF(message) {
-  if (!message || !message.records || !message.records.length) return null;
-  const rec = message.records[0];
-  if (rec.recordType === 'text') return new TextDecoder().decode(rec.data).trim().toUpperCase();
-  const bytes = new Uint8Array(rec.data.buffer || rec.data);
-  return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
-}
+        } catch (error) {
+          statusDiv.innerText = "Erro ao iniciar NFC: " + error;
+          statusDiv.style.color = "red";
+        }
+      } else {
+        statusDiv.innerText = "Erro: Este navegador/dispositivo não suporta WebNFC. Use o Chrome no Android.";
+        statusDiv.style.color = "red";
+      }
+    });
 
-function handleUID(uid) {
-  setState('ok');
-  vibrate([80, 40, 80]);
-  const dup = log.filter(e => e.date === TODAY).some(e => e.uid === uid);
-  if (dup) {
-    setStatus('⚠ ' + uid + ' já lido hoje', 'err');
-    addLog(uid, 'dup');
-    reset(2500);
-    return;
-  }
-  setStatus('Enviando ' + uid + '…', 'info');
-  sendToSheets(uid);
-}
-
-// ─── CORRIGIDO: fetch no-cors substitui iframe (mais confiável no Chrome Android) ───
-function sendToSheets(uid) {
-  const date      = new Date().toLocaleDateString('pt-BR');
-  const scriptUrl = cfg.scriptUrl || document.getElementById('scriptUrl').value.trim();
-  const cbName    = 'g17cb_' + Date.now();
-  const url       = scriptUrl
-    + '?uid='      + encodeURIComponent(uid)
-    + '&date='     + encodeURIComponent(date)
-    + '&callback=' + cbName;
-
-  // JSONP — script tags nunca são bloqueadas por CORS
-  window[cbName] = function(data) {
-    delete window[cbName];
-    if (script.parentNode) script.parentNode.removeChild(script);
-    if (data.status === 'ok') {
-      setStatus('✓ ' + uid + ' confirmado na planilha', 'ok');
-      addLog(uid, 'ok');
-    } else {
-      setStatus('❌ Erro Apps Script: ' + data.message, 'err');
-      addLog(uid, 'err');
-    }
-    reset(500);
-  };
-
-  const script = document.createElement('script');
-  script.src = url;
-  script.onerror = function() {
-    delete window[cbName];
-    if (script.parentNode) script.parentNode.removeChild(script);
-    setStatus('❌ Falha de rede', 'err');
-    addLog(uid, 'err');
-    reset(500);
-  };
-  document.head.appendChild(script);
-  setStatus('Enviando ' + uid + '…', 'info');
-}
-
-// ─── NOVO: botão para testar a URL do Apps Script ───
-function testConnection() {
-  const url = document.getElementById('scriptUrl').value.trim();
-  if (!url) { setStatus('Cole a URL antes de testar', 'err'); return; }
-  setStatus('Testando conexão…', 'info');
-  const cbName = 'g17test_' + Date.now();
-  window[cbName] = function(data) {
-    delete window[cbName];
-    if (s.parentNode) s.parentNode.removeChild(s);
-    setStatus(data.status === 'ok' ? '✓ Conectado! Verifique a planilha.' : '❌ Erro: ' + data.message, data.status === 'ok' ? 'ok' : 'err');
-  };
-  const s = document.createElement('script');
-  s.src = url + '?uid=TESTE_CONN&date=teste&callback=' + cbName;
-  s.onerror = () => { delete window[cbName]; setStatus('❌ Sem resposta do servidor', 'err'); };
-  document.head.appendChild(s);
-}
-
-function addLog(uid, status) {
-  const now = new Date();
-  log.unshift({ uid, status, date: TODAY,
-    time: now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' }) });
-  if (log.length > 200) log = log.slice(0, 200);
-  localStorage.setItem('g17_log', JSON.stringify(log));
-  renderLog();
-  updateCounter();
-}
-
-function renderLog() {
-  const body    = document.getElementById('logBody');
-  const entries = log.filter(e => e.date === TODAY);
-  if (!entries.length) { body.innerHTML = '<div class="log-empty">Nenhum cartão lido ainda</div>'; return; }
-  body.innerHTML = entries.map(e =>
-    '<div class="log-item ' + e.status + '">' +
-    '<div class="log-uid">' + e.uid + '</div>' +
-    '<div class="log-meta">' +
-    '<div class="log-time">' + e.time + '</div>' +
-    '<div class="log-badge">' + (e.status==='ok'?'Salvo':e.status==='err'?'Erro':'Duplic.') + '</div>' +
-    '</div></div>'
-  ).join('');
-}
-
-function clearLog() {
-  log = log.filter(e => e.date !== TODAY);
-  localStorage.setItem('g17_log', JSON.stringify(log));
-  renderLog();
-  updateCounter();
-}
-
-function updateCounter() {
-  document.getElementById('cnt').textContent =
-    log.filter(e => e.date === TODAY && e.status === 'ok').length;
-}
-
-function setState(s) {
-  document.getElementById('scanBtn').className = 'scan-btn ' + s;
-  document.getElementById('rings').className   = 'rings ' + s;
-  document.getElementById('scanLabel').textContent = s==='scanning'?'Aproxime o Cartão':s==='ok'?'Leitura OK!':s==='err'?'Tente Novamente':'Toque para Escanear';
-  document.getElementById('scanHint').textContent  = s==='scanning'?'Mantenha próximo até vibrar':s==='ok'?'Cartão registrado!':s==='err'?'Erro na leitura':'Aproxime o cartão MEEP';
-}
-
-function setStatus(msg, type) {
-  document.getElementById('statusBar').className = 'status ' + (type||'');
-  document.getElementById('statusTxt').textContent = msg;
-}
-
-function reset(delay) {
-  setTimeout(() => {
-    scanning = false;
-    setState('');
-    if (reader) { reader.onreading = null; reader.onreadingerror = null; }
-  }, delay);
-}
-
-function vibrate(p) { if (navigator.vibrate) navigator.vibrate(p); }
-
-function toggleCfg(forceOpen) {
-  const head = document.getElementById('cfgHead');
-  const body = document.getElementById('cfgBody');
-  const open = body.classList.contains('open');
-  if (forceOpen || !open) { body.classList.add('open'); head.classList.add('open'); }
-  else { body.classList.remove('open'); head.classList.remove('open'); }
-}
-
-function saveCfg() {
-  cfg.scriptUrl = document.getElementById('scriptUrl').value.trim();
-  localStorage.setItem('g17_cfg', JSON.stringify(cfg));
-  toggleCfg();
-  setStatus('Configuração salva!', 'ok');
-}
-</script>
+    // Função para copiar o texto gerado
+    copyBtn.addEventListener('click', () => {
+      outputText.select();
+      outputText.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(outputText.value);
+      alert("Dados copiados! Agora é só colar (Ctrl+V) na sua planilha.");
+    });
+  </script>
 </body>
 </html>
